@@ -1,0 +1,2 @@
+下载sdf化合物集文件，使用GenerateFragmentDict.py将sdf文件转换成SMILES并将化合物使用BRICS碎片化。  
+
