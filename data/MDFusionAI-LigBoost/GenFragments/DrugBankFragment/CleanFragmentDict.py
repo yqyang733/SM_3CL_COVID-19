@@ -3,81 +3,35 @@ import dbm
 import pickle
 import struct
 from rdkit import Chem
-from rdkit.Chem import Draw
-from rdkit.Chem import BRICS
 from collections import defaultdict
 
-all_counts = defaultdict(int)
-for i in range(100):
-    dbname = "chembl_" + str(i).zfill(2) + '.dbm'
-    with dbm.open(dbname, flag='r') as db:
-        for key,val in db.items():
-            all_counts[key]+=struct.unpack('I',val)[0]
-
-# itms = sorted(((y,x) for x,y in all_counts.items()),reverse=True)
-
-# len(itms)
-# itms[:10]
-# itms[-10:]
-# tc,ts = zip(*itms[:10])
-# Draw.MolsToGridImage([Chem.MolFromSmiles(x.decode('UTF-8')) for x in ts],molsPerRow=4,legends=[str(x) for x in tc])
-# tc,ts = zip(*itms[-10:])
-# Draw.MolsToGridImage([Chem.MolFromSmiles(x.decode('UTF-8')) for x in ts],molsPerRow=4,legends=[str(x) for x in tc])
-
-# import re
-# expr = re.compile(r'[0-9]+\*')
-# clean_counts = defaultdict(int)
-# nRejected=0
-# for k,v in all_counts.items():
-#     k = k.decode('UTF-8')
-#     if k.find('*')<0:
-#         nRejected +=1
-#         continue
-#     k = expr.sub('*',k)
-#     clean_counts[k]+=v
-
-# clean_itms = sorted([(v,k) for k,v in clean_counts.items()],reverse=True)
-# print(len(clean_itms))
-# clean_itms[:10]
-
-# tc,ts = zip(*clean_itms[:10])
-# Draw.MolsToGridImage([Chem.MolFromSmiles(x) for x in ts],molsPerRow=4,legends=[str(x) for x in tc])
-# tc,ts = zip(*clean_itms[-10:])
-# Draw.MolsToGridImage([Chem.MolFromSmiles(x) for x in ts],molsPerRow=4,legends=[str(x) for x in tc])
-
-# tmp = [x for x in clean_itms if x[1].count('*')==4]
-# tc,ts = zip(*tmp)
-# Draw.MolsToGridImage([Chem.MolFromSmiles(x) for x in ts],molsPerRow=4,legends=[str(x) for x in tc])
-
-# tmp = [x for x in clean_itms if x[1].count('*')==3]
-# tc,ts = zip(*tmp)
-# Draw.MolsToGridImage([Chem.MolFromSmiles(x) for x in ts],molsPerRow=4,legends=[str(x) for x in tc])
+dbname = "output.dbm"
+fragment_counts = defaultdict(int)
+with dbm.open(dbname, flag='r') as db:
+    for key, val in db.items():
+        fragment_counts[key] += struct.unpack('I',val)[0]
 
 expr = re.compile(r'[0-9]+\*')
-clean_counts2 = defaultdict(int)
+fragment_counts_clean = defaultdict(int)
 nRejected=0
-for k,v in all_counts.items():
+for k,v in fragment_counts.items():
     k = k.decode('UTF-8')
     if k.find('*')<0:
         nRejected +=1
         continue
     k = Chem.MolToSmiles(Chem.MolFromSmiles(expr.sub('*',k)),True)
-    clean_counts2[k]+=v
+    fragment_counts_clean[k] += v
 
-clean_itms2 = sorted([(v,k) for k,v in clean_counts2.items()],reverse=True)
-# print(len(clean_itms2),len(clean_itms))
+fragment_counts_clean_ = sorted([(v,k) for k,v in fragment_counts_clean.items()],reverse=True)
 
-pickle.dump(clean_counts2,open('chemical_words_clean_counts2.pkl','wb+'))
+pickle.dump(fragment_counts_clean_, open('fragment_counts_clean.pkl','wb+'))
 
-multidict_fragment = defaultdict(list)
-for i in clean_counts2.keys():
+HeavyNum_Fragments = defaultdict(list)
+for i in fragment_counts_clean.keys():
     try:
-        print(i)
         m = Chem.MolFromSmiles(i)
         heanum = m.GetNumHeavyAtoms()
-        multidict_fragment[heanum].append(i)
+        HeavyNum_Fragments[heanum].append(i)
     except:
-        print("!!!!!!!!!!!!!"+str(i))
         pass
-
-pickle.dump(multidict_fragment, open('multidict_fragment_chembl.pkl','wb+'))
+pickle.dump(HeavyNum_Fragments, open('HeavyNum_Fragments.pkl','wb+'))
