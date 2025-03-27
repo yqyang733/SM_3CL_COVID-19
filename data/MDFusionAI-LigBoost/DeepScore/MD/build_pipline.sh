@@ -138,8 +138,8 @@ gmx editconf -f build1.gro -o newbox.gro -bt cubic -d 0.8
 gmx solvate -cp newbox.gro -cs spc216.gro -p topol.top -o solv.gro
 gmx grompp -f ~/file/gmx_file/ions.mdp -c solv.gro -p topol.top -o ions.tpr -maxwarn 2
 echo 15|gmx genion -s ions.tpr -o solv_ions.gro -p topol.top -pname NA -nname CL -neutral -conc 0.15
-echo -e "1|13\nname 24 SOLU\nname 23 SOLV\nq\n"|gmx make_ndx -f solv_ions.gro -o index.ndx
+echo -e "1|13\nq\n"|gmx make_ndx -f solv_ions.gro -o index.ndx
 
 python GenerateMdp.py
-python GenerateSubmit.py
-# sbatch job.sh
+#python GenerateSubmit.py
+#sbatch job.sh

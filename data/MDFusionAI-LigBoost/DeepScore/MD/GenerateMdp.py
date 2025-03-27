@@ -163,7 +163,7 @@ DispCorr                = EnerPres
 ; TEMPERATURE & PRESSURE COUPL
 ;----------------------------------------------------
 tcoupl     =  V-rescale
-tc_grps    =  SOLU    SOLV
+tc_grps    =  Protein_LIG    Water_and_ions
 tau_t      =  1.0     1.0
 ref_t      =  310.15  310.15
 pcoupl     =  no
@@ -249,7 +249,7 @@ DispCorr                = EnerPres
 ; TEMPERATURE & PRESSURE COUPL
 ;----------------------------------------------------
 tcoupl     =  V-rescale
-tc_grps    =  SOLU    SOLV
+tc_grps    =  Protein_LIG    Water_and_ions
 tau_t      =  1.0     1.0
 ref_t      =  310.15  310.15
 pcoupl           = Berendsen
@@ -340,7 +340,7 @@ DispCorr                = EnerPres
 ; TEMPERATURE & PRESSURE COUPL
 ;----------------------------------------------------
 tcoupl           =  V-rescale
-tc_grps          =  SOLU    SOLV
+tc_grps          =  Protein_LIG    Water_and_ions
 tau_t            =  1.0     1.0
 ref_t            =  310.15  310.15
 pcoupl           = Parrinello-Rahman

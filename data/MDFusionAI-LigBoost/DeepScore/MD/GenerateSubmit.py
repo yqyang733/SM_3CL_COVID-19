@@ -28,9 +28,13 @@ echo "CUDA_VISIBLE_DEVICES: $CUDA_VISIBLE_DEVICES"
 echo "Job directory: $(pwd)"
 
 # Decide the software version
+# source /public/software/profile.d/apps_gromacs_2023.2.sh
+export PATH=/public/home/yqyang/software/Miniconda3/envs/gmxMMPBSA/bin:$PATH
 source /public/software/profile.d/apps_gromacs_2023.2.sh
 
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
+
+sh build_pipline.sh LIG.mol2 ../REC/PRO.pdb
 
 #############################
 mkdir em
