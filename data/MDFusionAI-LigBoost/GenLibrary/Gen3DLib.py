@@ -18,22 +18,35 @@
 版本/Version: 0.0.0
 """
 
+import os
 import sys
+import pickle
+import numpy as np
 from pymol import cmd
 from rdkit import Chem
 from molvs import standardize_smiles
 
-# 假设片段库是一个 SMILES 列表
-fragment_library = [
-    "*C",        # 甲基
-    "*OCCCC",        # 羟基
-    "*N",        # 氨基
-    "*CCC=O",      # 羰基
-    "*C#N",      # 氰基
-    # ... 其他片段
-]
-
 def get_neiid_bysymbol(mol,marker):
+
+    """根据阈值处理数据，返回处理后的结果和统计信息
+    
+    参数:
+        data (pd.DataFrame): 输入数据框
+        threshold (float): 过滤阈值，默认为0.5
+        
+    返回:
+        tuple: 包含两个元素
+            - processed_data (pd.DataFrame): 处理后的数据
+            - stats (dict): 处理统计信息
+            
+    异常:
+        ValueError: 当阈值不在0-1范围内时抛出
+            
+    示例:
+        >>> data = pd.DataFrame({'value': [0.1, 0.6, 0.4]})
+        >>> df, stats = process_data(data, threshold=0.5)
+    """
+
     try:
         for atom in mol.GetAtoms():
             if atom.GetSymbol()==marker:
@@ -46,21 +59,52 @@ def get_neiid_bysymbol(mol,marker):
         print (e)
         return None
 
-#函数二，获取marker原子的index
 def get_id_bysymbol(mol,marker):
+
+    """根据阈值处理数据，返回处理后的结果和统计信息
+    
+    参数:
+        data (pd.DataFrame): 输入数据框
+        threshold (float): 过滤阈值，默认为0.5
+        
+    返回:
+        tuple: 包含两个元素
+            - processed_data (pd.DataFrame): 处理后的数据
+            - stats (dict): 处理统计信息
+            
+    异常:
+        ValueError: 当阈值不在0-1范围内时抛出
+            
+    示例:
+        >>> data = pd.DataFrame({'value': [0.1, 0.6, 0.4]})
+        >>> df, stats = process_data(data, threshold=0.5)
+    """
+
     for atom in mol.GetAtoms():
         if atom.GetSymbol()==marker:
             return atom.GetIdx()
 
-mol_a = MolFromMol2File('LIG-1.mol2')
-# mol_a = Chem.AddHs(mol_a)
-Chem.MolToMolFile(mol_a, 'optimized_mol_11.mol')
-mol_b = Chem.MolFromSmiles(fragment_library[0])
-AllChem.EmbedMolecule(mol_b)
-AllChem.MMFFOptimizeMolecule(mol_b)
-# mol_b = Chem.AddHs(mol_b)
+def combine2frags(mol_a, mol_b, maker_b='*', maker_a='*'):
 
-def combine2frags(mol_a,mol_b,maker_b='*',maker_a='*'):
+    """根据阈值处理数据，返回处理后的结果和统计信息
+    
+    参数:
+        data (pd.DataFrame): 输入数据框
+        threshold (float): 过滤阈值，默认为0.5
+        
+    返回:
+        tuple: 包含两个元素
+            - processed_data (pd.DataFrame): 处理后的数据
+            - stats (dict): 处理统计信息
+            
+    异常:
+        ValueError: 当阈值不在0-1范围内时抛出
+            
+    示例:
+        >>> data = pd.DataFrame({'value': [0.1, 0.6, 0.4]})
+        >>> df, stats = process_data(data, threshold=0.5)
+    """
+
     #将两个待连接分子置于同一个对象中
     bind_pos_a=get_neiid_bysymbol(mol_a,maker_a)
     print(bind_pos_a)
@@ -79,43 +123,8 @@ def combine2frags(mol_a,mol_b,maker_b='*',maker_a='*'):
     ed_merged_mol=Chem.EditableMol(temp_mol)
     ed_merged_mol.RemoveAtom(marker_b_idx)
     final_mol = ed_merged_mol.GetMol()
+    
     return final_mol
-
-final_mol = combine2frags(mol_a, mol_b)
-Chem.MolToMolFile(final_mol, 'merge.mol')
-
-cmd.load("merge.mol", "LIG")
-cmd.alter("all","resn='LIG'")
-cmd.h_add("LIG")
-cmd.save("merged.mol2", "LIG")
-cmd.delete("all")
-
-modified_mol = MolFromMol2File('merged.mol2')
-
-fixed_atoms = list(range(15))  # 例如，固定前两个原子（C 和 C）
-
-# 3. 创建 UFF 力场对象
-ff = rdForceFieldHelpers.UFFGetMoleculeForceField(modified_mol)
-
-# 4. 添加位置约束：将固定原子的位置约束为初始坐标
-for atom_idx in fixed_atoms:
-    pos = modified_mol.GetConformer().GetAtomPosition(atom_idx)  # 获取原子的初始坐标
-    ff.AddFixedPoint(atom_idx)  # 固定该原子的位置
-
-# 5. 运行优化
-ff.Minimize(maxIts=1000)  # 最大迭代次数
-
-# 6. 查看优化后的结构
-# print(Chem.MolToXYZBlock(mol))  # 输出优化后的 XYZ 坐标
-
-# 7. 保存优化后的分子（可选）
-Chem.MolToMolFile(modified_mol, 'final.mol')  # 保存为 .mol 文件
-# Chem.MolToMolFile(final_mol, 'optimized_mol_5.mol')  # 保存为 .mol 文件
-
-cmd.load("final.mol", "LIG")
-cmd.h_add("LIG")
-cmd.save("final.mol2", "LIG")
-cmd.delete("all")
 
 def pickfragments(fragmentslib, heavyatmnumrange):
 
@@ -138,8 +147,14 @@ def pickfragments(fragmentslib, heavyatmnumrange):
         >>> df, stats = process_data(data, threshold=0.5)
     """
 
-    minatmnum = int(heavyatmnumrange.split("-")[0])
-    maxatmnum = int(heavyatmnumrange.split("-")[1])
+    fragmentslib = pickle.load(open(fragmentslib,'rb+'))
+
+    if heavyatmnumrange == "0":
+        minatmnum = 1
+        maxatmnum = 10
+    else:
+        minatmnum = int(heavyatmnumrange.split("-")[0])
+        maxatmnum = int(heavyatmnumrange.split("-")[1])
 
     numlst = [i for i in range(minatmnum, maxatmnum+1) if min(fragmentslib.keys()) <= i <= max(fragmentslib.keys())]
 
@@ -216,6 +231,8 @@ def iterallnodes(fragment):
         >>> df, stats = process_data(data, threshold=0.5)
     """
 
+    fragment = standardize_smiles(fragment)
+
     if '*' not in fragment:
         return [fragment]
     
@@ -229,9 +246,113 @@ def iterallnodes(fragment):
             if char == '*' and j != i:
                 continue  # 跳过其他星号
             variant.append(char)
-        onemarkfrags.append(''.join(variant))
+        onemarkfrags.append(''.join(variant).replace("()", ""))
     
     return onemarkfrags
+
+def getfixedatms(leadmol):
+    
+    """根据阈值处理数据，返回处理后的结果和统计信息
+    
+    参数:
+        data (pd.DataFrame): 输入数据框
+        threshold (float): 过滤阈值，默认为0.5
+        
+    返回:
+        tuple: 包含两个元素
+            - processed_data (pd.DataFrame): 处理后的数据
+            - stats (dict): 处理统计信息
+            
+    异常:
+        ValueError: 当阈值不在0-1范围内时抛出
+            
+    示例:
+        >>> data = pd.DataFrame({'value': [0.1, 0.6, 0.4]})
+        >>> df, stats = process_data(data, threshold=0.5)
+    """
+
+    fixedatms = []
+
+    for atom in leadmol.GetAtoms():
+        if atom.GetSymbol() == "*":
+            leadmark = leadmol.GetConformer().GetAtomPosition(atom.GetIdx())
+            leadmarkpos = np.array([leadmark.x, leadmark.y, leadmark.z])
+        else:
+            fixedatms.append(atom.GetIdx())
+
+    return fixedatms, leadmarkpos
+
+def optimizeconf(mergemoladdh, fixedatms):
+
+    """根据阈值处理数据，返回处理后的结果和统计信息
+    
+    参数:
+        data (pd.DataFrame): 输入数据框
+        threshold (float): 过滤阈值，默认为0.5
+        
+    返回:
+        tuple: 包含两个元素
+            - processed_data (pd.DataFrame): 处理后的数据
+            - stats (dict): 处理统计信息
+            
+    异常:
+        ValueError: 当阈值不在0-1范围内时抛出
+            
+    示例:
+        >>> data = pd.DataFrame({'value': [0.1, 0.6, 0.4]})
+        >>> df, stats = process_data(data, threshold=0.5)
+    """
+
+    ff = Chem.rdForceFieldHelpers.UFFGetMoleculeForceField(mergemoladdh)
+
+    for atom_idx in fixedatms:
+        pos = mergemoladdh.GetConformer().GetAtomPosition(atom_idx)  
+        ff.AddFixedPoint(atom_idx)  
+
+    ff.Minimize(maxIts = 10000)
+
+    return mergemoladdh  
+
+def createfolder(folder_path):
+    """
+    如果文件夹不存在，则创建它。
+    
+    参数:
+        folder_path (str): 要创建的文件夹路径。
+    """
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+        print(f"文件夹已创建: {folder_path}")
+    else:
+        print(f"文件夹已存在: {folder_path}")
+
+def movefrag2lead(mol, frag_pos, lead_pos):
+    """
+    将分子中某个原子移动到目标坐标，并平移整个分子
+    
+    参数:
+        mol: RDKit 分子对象
+        atom_idx: 要移动的原子索引（从0开始）
+        target_pos: 目标坐标 [x, y, z]（单位：Å）
+    
+    返回:
+        平移后的新分子对象
+    """
+    
+    # 计算平移向量
+    translation = np.array(lead_pos) - np.array(frag_pos)
+    
+    # 创建分子副本（避免修改原分子）
+    new_mol = Chem.Mol(mol)
+    conf = new_mol.GetConformer()
+    
+    # 对所有原子应用平移
+    for i in range(mol.GetNumAtoms()):
+        pos = conf.GetAtomPosition(i)
+        new_pos = [pos.x + translation[0], pos.y + translation[1], pos.z + translation[2]]
+        conf.SetAtomPosition(i, new_pos)
+    
+    return new_mol
 
 def genlibrary(leadmol2, fragmentslib, heavyatmnumrange):
 
@@ -254,26 +375,53 @@ def genlibrary(leadmol2, fragmentslib, heavyatmnumrange):
         >>> df, stats = process_data(data, threshold=0.5)
     """
 
+    libfolder = "Mol3DLib"
+    createfolder(libfolder)
+
     fragmentspicked = pickfragments(fragmentslib, heavyatmnumrange)
 
     leadmol = Chem.MolFromMol2File(leadmol2)
-    # 需要找出leadmol中除了mark的其他的所有原子的idx用来后续最小化时候的固定
+    fixedatms, leadmarkpos = getfixedatms(leadmol)
+
+    gensmiles = []
+    newsmis = open("smiboost.csv", "w")
+    numidx = 0
 
     for frag in fragmentspicked:
-        leadmolcopy = leadmol.copy()
+        leadmolcopy = Chem.Mol(leadmol)
         
         onemarkfrags = iterallnodes(frag)
         for i in onemarkfrags:
             i = standardize_smiles(i)
             fragmol = Chem.MolFromSmiles(i)
+            fragmol = Chem.AddHs(fragmol)
             Chem.AllChem.EmbedMolecule(fragmol)
             Chem.AllChem.MMFFOptimizeMolecule(fragmol)
-            
-
-
-
-    # 迭代每个片段上的每个可拼接节点对leadmol进行片段替换拼接生成SMILES和对应的3D结构，先设置一个列表，看新生成的分子在不在列表中，不在的话就存在列表中并生成其对应的3D结构，存在的话跳过。这样做是为了生成重复的分子。
-
+            _, fragmarkpos = getfixedatms(fragmol)
+            fragmol = Chem.RemoveHs(fragmol)
+            fragmol = movefrag2lead(fragmol, fragmarkpos, leadmarkpos)
+            mergemol = combine2frags(leadmolcopy, fragmol)
+            smi = Chem.MolToSmiles(mergemol)
+            smi_norm = standardize_smiles(smi)
+            if smi_norm not in gensmiles:
+                numidx += 1
+                molname = f"mol{numidx}"
+                gensmiles.append(smi_norm)
+                newsmis.write(f"{molname},{smi_norm}\n")
+                Chem.MolToMolFile(mergemol, 'merge.mol')
+                cmd.load("merge.mol", "LIG")
+                cmd.h_add("LIG")
+                cmd.save("merge.mol2", "LIG")
+                cmd.delete("all")
+                fixed = [i-1 for i in fixedatms]
+                mergemoladdh = Chem.MolFromMol2File('merge.mol2')
+                moloptimized = optimizeconf(mergemoladdh, fixed)
+                Chem.MolToMolFile(moloptimized, f"{molname}.mol")
+                cmd.load(f"{molname}.mol", "LIG")
+                cmd.h_add("LIG")
+                cmd.alter("all","resn='LIG'")
+                cmd.save(os.path.join(libfolder, f"{molname}.mol2"), "LIG")
+                cmd.delete("all")
 
 def main():
 
