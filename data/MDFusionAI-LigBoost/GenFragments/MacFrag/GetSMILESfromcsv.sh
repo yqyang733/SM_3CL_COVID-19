@@ -1,2 +1,0 @@
-awk -F ";" '{print $32}' DOWNLOAD-hw0MNeNJgvft53v4FGwEZ-NxGTZEyhaJBX25Wa0XwQE\=.csv >> Chembl_SMILES
-awk -F ";" '{print $32}' DOWNLOAD-hw0MNeNJgvft53v4FGwEZ-NxGTZEyhaJBX25Wa0XwQE\=_part2.csv >> Chembl_SMILES
