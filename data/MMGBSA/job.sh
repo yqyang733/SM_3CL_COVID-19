@@ -1,0 +1,1 @@
+gmx_MMPBSA -O -i mmgbsa.in -cs ../pbc/new.pdb -ci ../pbc/index_new.ndx -cg 3 2 -lm LIG-1.mol2 -ct ../pbc/md_pbcfit_all_new.xtc -o FINAL_RESULTS_MMPBSA.dat -eo FINAL_RESULTS_MMPBSA.csv -do FINAL_DECOMP_MMPBSA.dat -deo FINAL_DECOMP_MMPBSA.csv -nogui
